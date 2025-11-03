@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 실시간 채팅 앱</title>
+    <style>
+        /* CSS는 회원님이 만드신 원본과 100% 동일합니다 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+                Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            max-height: 700px;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .chat-window {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #message-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .message-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .message-username {
+            display: block;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .message-text {
+            font-size: 0.95em;
+            color: #212529;
+            margin: 0;
+        }
+
+        #chat-form {
+            display: flex;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        #username-input {
+            width: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #send-button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <header>Firebase 실시간 채팅방</header>
+
+        <div class="chat-window" id="chat-window">
+            <ul id="message-list">
+                </ul>
+        </div>
+
+        <form id="chat-form">
+            <input type="text" id="username-input" placeholder="이름" required>
+            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required>
+            <button type="submit" id="send-button">전송</button>
+        </form>
+    </div>
+
+    <script type="module">
+        // 1. Firebase SDK에서 필요한 함수들을 import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+        
+        // 1-1. Realtime Database에 필요한 함수들 추가로 import
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            onChildAdded, 
+            serverTimestamp, 
+            query, 
+            orderByChild 
+        } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+
+        // 2. 회원님이 제공한 Firebase 설정(config) 객체
+        // (chat-33290 프로젝트)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
+            authDomain: "chat-33290.firebaseapp.com",
+            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com", // Realtime DB URL 추가
+            projectId: "chat-33290",
+            storageBucket: "chat-33290.firebasestorage.app",
+            messagingSenderId: "894357766876",
+            appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19",
+            measurementId: "G-B0L4WFFKXK"
+        };
+
+        // 3. Firebase 앱 및 서비스 초기화
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // (참고용)
+        const database = getDatabase(app); // Realtime Database 가져오기
+        const messagesRef = ref(database, 'messages'); // 'messages'라는 경로(채팅방) 참조
+
+        // 4. 필요한 HTML 요소들을 변수에 저장 (기존과 동일)
+        const chatForm = document.getElementById('chat-form');
+        const usernameInput = document.getElementById('username-input');
+        const messageInput = document.getElementById('message-input');
+        const messageList = document.getElementById('message-list');
+        const chatWindow = document.getElementById('chat-window');
+
+        // 5. 폼 제출 이벤트 (메시지 전송) - 모듈식 구문으로 변경
+        chatForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // 페이지 새로고침 방지
+
+            const username = usernameInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (username === '' || message === '') {
+                alert('이름과 메시지를 모두 입력해주세요.');
+                return;
+            }
+
+            // [변경] 모듈식: push(레퍼런스, 데이터)
+            push(messagesRef, {
+                username: username,
+                message: message,
+                timestamp: serverTimestamp() // [변경] 모듈식: serverTimestamp() 함수 호출
+            });
+
+            // 메시지 입력창 비우기 (이름은 유지)
+            messageInput.value = '';
+            messageInput.focus();
+        });
+
+        // 6. Firebase에서 새 메시지 수신 (실시간 리스너) - 모듈식 구문으로 변경
+        
+        // 6a. [변경] 정렬 쿼리 생성 (시간순으로 정렬)
+        const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+
+        // 6b. [변경] 리스너 부착: onChildAdded(쿼리, 콜백함수)
+        onChildAdded(messagesQuery, function(snapshot) {
+            const data = snapshot.val(); // DB에서 가져온 메시지 객체
+            const username = data.username;
+            const message = data.message;
+
+            // ---- 기존의 DOM 생성 로직과 100% 동일 ----
+            const li = document.createElement('li');
+            li.className = 'message-item';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.className = 'message-username';
+            usernameSpan.textContent = username;
+
+            const messageText = document.createElement('p');
+            messageText.className = 'message-text';
+            messageText.textContent = message;
+
+            li.appendChild(usernameSpan);
+            li.appendChild(messageText);
+
+            messageList.appendChild(li);
+            // ---- DOM 생성 로직 끝 ----
+
+            // 새 메시지가 추가되면 스크롤을 맨 아래로 이동
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+    </script>
+
+</body>
+</html>
