@@ -287,6 +287,219 @@
             margin: 0;
         }
 
+        #chat-form {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        #username-input {
+            width: 90px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 8px;
+            min-width: 100px;
+        }
+
+        #font-size-select, #color-picker {
+            margin-right: 8px;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        #send-button {
+            padding: 8px 14px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <header>Firebase 실시간 채팅방</header>
+
+        <div class="chat-window" id="chat-window">
+            <ul id="message-list"></ul>
+        </div>
+
+        <!-- 🔹 입력창 + 글자 옵션 UI -->
+        <form id="chat-form">
+            <input type="text" id="username-input" placeholder="이름" required>
+
+            <!-- 글자 크기 선택 -->
+            <select id="font-size-select" title="글자 크기">
+                <option value="12px">12</option>
+                <option value="14px" selected>14</option>
+                <option value="16px">16</option>
+                <option value="18px">18</option>
+                <option value="20px">20</option>
+            </select>
+
+            <!-- 글자 색상 선택 -->
+            <input type="color" id="color-picker" value="#000000" title="글자 색상">
+
+            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required>
+            <button type="submit" id="send-button">전송</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            onChildAdded, 
+            serverTimestamp, 
+            query, 
+            orderByChild 
+        } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5TAYEoAEawpaYr1tR373OhCYumOc4B7o",
+            authDomain: "chat-33290.firebaseapp.com",
+            databaseURL: "https://chat-33290-default-rtdb.firebaseio.com",
+            projectId: "chat-33290",
+            storageBucket: "chat-33290.firebasestorage.app",
+            messagingSenderId: "894357766876",
+            appId: "1:894357766876:web:bd27cd3f1da7e29b3eaa19"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const messagesRef = ref(database, 'messages');
+
+        const chatForm = document.getElementById('chat-form');
+        const usernameInput = document.getElementById('username-input');
+        const messageInput = document.getElementById('message-input');
+        const fontSizeSelect = document.getElementById('font-size-select');
+        const colorPicker = document.getElementById('color-picker');
+        const messageList = document.getElementById('message-list');
+        const chatWindow = document.getElementById('chat-window');
+
+        // 메시지 전송
+        chatForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const username = usernameInput.value.trim();
+            const message = messageInput.value.trim();
+            const color = colorPicker.value;
+            const size = fontSizeSelect.value;
+
+            if (!username || !message) {
+                alert('이름과 메시지를 모두 입력해주세요.');
+                return;
+            }
+
+            // 🔹 색상과 크기 포함해서 DB 저장
+            push(messagesRef, {
+                username,
+                message,
+                color,
+                size,
+                timestamp: serverTimestamp()
+            });
+
+            messageInput.value = '';
+            messageInput.focus();
+        });
+
+        // 🔹 실시간 메시지 표시
+        const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+        onChildAdded(messagesQuery, (snapshot) => {
+            const data = snapshot.val();
+
+            const li = document.createElement('li');
+            li.className = 'message-item';
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.className = 'message-username';
+            usernameSpan.textContent = data.username;
+
+            const messageText = document.createElement('p');
+            messageText.className = 'message-text';
+            messageText.textContent = data.message;
+
+            // 🔹 색상 / 크기 적용
+            messageText.style.color = data.color || '#000';
+            messageText.style.fontSize = data.size || '14px';
+
+            li.appendChild(usernameSpan);
+            li.appendChild(messageText);
+
+            messageList.appendChild(li);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+    </script>
+
+</body>
+</html>
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .chat-window {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #message-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .message-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message-username {
+            display: block;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .message-text {
+            font-size: 0.95em;
+            color: #212529;
+            margin: 0;
+        }
+
         .message-text h1 {
             font-size: 1.5em;
             margin: 0.5em 0;
