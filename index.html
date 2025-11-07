@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Firebase 실시간 채팅 앱 (v3)</title>
+<title>Firebase 실시간 채팅 앱 (글라스 통합)</title>
 <style>
-/* 기존 스타일 유지 */
-:root {
+:root{
   --bg-color: #f4f4f4;
   --container-bg: #fff;
   --header-bg: #007bff;
   --header-text: #fff;
   --window-bg: #fff;
   --window-border: #ddd;
-  --message-bg: #e9ecef;
+  --message-bg: rgba(255,255,255,0.8);
   --message-user: #495057;
   --message-text: #212529;
   --form-bg: #f8f9fa;
@@ -22,10 +21,10 @@
   --input-text: #212529;
   --button-bg: #007bff;
   --button-text: #fff;
-  --button-hover-bg: #0056b3;
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-color: rgba(0,0,0,0.1);
 }
 
+*{box-sizing:border-box}
 body {
   font-family: 'Segoe UI', sans-serif;
   background-color: var(--bg-color);
@@ -35,46 +34,43 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
-  transition: background-color 0.3s, background-image 0.3s;
+  transition: background-color .3s, background-image .3s;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  position: relative;
 }
 
+/* 컨테이너 기본 */
 .chat-container {
   width: 100%;
   max-width: 500px;
-  background-color: var(--container-bg);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px var(--shadow-color);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   height: 80vh;
   max-height: 700px;
-  transition: background-color 0.3s, box-shadow 0.3s;
+  transition: background-color .3s, box-shadow .3s;
+  position: relative;
+  overflow: hidden;
 }
 
+/* 헤더 */
 header {
   background-color: var(--header-bg);
   color: var(--header-text);
-  padding: 15px;
+  padding: 12px 48px;
   text-align: center;
-  font-size: 1.2rem;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  font-size: 1.05rem;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
-
-header > span {
-  flex-grow: 1;
-}
-
+header > span{flex-grow:1}
 #theme-select {
   position: absolute;
-  left: 15px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   padding: 4px 6px;
@@ -84,10 +80,9 @@ header > span {
   color: var(--input-text);
   font-size: 0.8rem;
 }
-
 #reset-db-button {
   position: absolute;
-  right: 15px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background-color: #dc3545;
@@ -100,108 +95,120 @@ header > span {
   font-weight: bold;
 }
 
+/* 채팅 윈도우 */
 .chat-window {
   flex-grow: 1;
-  padding: 20px;
+  padding: 18px;
   overflow-y: auto;
   border-bottom: 1px solid var(--window-border);
   background-color: var(--window-bg);
-  transition: background-color 0.3s;
+  transition: background-color .3s;
 }
 
+/* 메시지 아이템 */
+#message-list{list-style:none;padding:0;margin:0}
 .message-item {
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   padding: 10px;
-  background-color: var(--message-bg);
-  border-radius: 8px;
+  border-radius: 10px;
   max-width: 80%;
+  position: relative;
+  word-break: break-word;
+  transition: background-color .25s, color .25s;
 }
-
 .message-username {
   display: block;
-  font-size: 0.8em;
-  font-weight: bold;
-  color: var(--message-user);
-  margin-bottom: 4px;
+  font-size: 0.78em;
+  font-weight: 700;
+  margin-bottom:6px;
 }
-
 .message-text {
   font-size: 0.95em;
-  color: var(--message-text);
 }
-
 .message-image {
   max-width: 100%;
-  border-radius: 5px;
-  margin-top: 5px;
+  border-radius: 6px;
+  margin-top: 6px;
   cursor: pointer;
+  display: block;
 }
 
+/* 폼 */
 #chat-form {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  padding: 15px;
+  padding: 12px;
+  gap:8px;
   background-color: var(--form-bg);
   border-top: 1px solid var(--window-border);
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+#username-input{width:90px;padding:8px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--input-text)}
+#message-input{flex:1;padding:8px;border:1px solid var(--input-border);border-radius:6px}
+#font-size-select,#color-picker{padding:6px;border-radius:6px;border:1px solid var(--input-border);cursor:pointer}
+#image-upload-label,#bg-upload-label{padding:6px 8px;border:1px solid var(--input-border);background:var(--input-bg);border-radius:6px;cursor:pointer}
+#send-button{padding:8px 14px;border:none;background-color:var(--button-bg);color:var(--button-text);border-radius:6px;cursor:pointer;font-weight:700}
+
+/* --- 글라스모피즘 관련 --- */
+
+/* 글라스 활성화 플래그가 body에 있을 때 동작 */
+body.glass-background .chat-container {
+  background-color: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  backdrop-filter: blur(10px) saturate(120%) contrast(95%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%) contrast(95%);
 }
 
-#username-input {
-  width: 90px;
-  padding: 8px;
-  margin-right: 8px;
-  border: 1px solid var(--input-border);
-  border-radius: 4px;
-  background-color: var(--input-bg);
-  color: var(--input-text);
+/* 테마별 세부 보정 (chat-container에 glass 클래스도 붙음) */
+.chat-container.glass {
+  padding: 6px; /* 안쪽 여백으로 유리 테두리 느낌 */
+  border-radius: 12px;
+  background-clip: padding-box;
 }
 
-#message-input {
-  flex-grow: 1;
-  padding: 8px;
-  border: 1px solid var(--input-border);
-  border-radius: 4px;
-  margin-right: 8px;
+/* 메시지 박스 글라스 */
+body.glass-background .message-item {
+  background-color: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--message-text);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
 }
 
-#font-size-select, #color-picker {
-  margin-right: 8px;
-  padding: 6px;
-  border-radius: 4px;
-  border: 1px solid var(--input-border);
-  cursor: pointer;
+/* 다크 계열 글라스 보정 (자동 JS로 토글됨) */
+body.glass-dark .chat-container { background-color: rgba(20,20,20,0.32); border-color: rgba(255,255,255,0.06); }
+body.glass-dark .message-item { background-color: rgba(10,10,10,0.22); border-color: rgba(255,255,255,0.04); color: #f1f1f1; }
+
+/* 폴백: backdrop-filter 미지원시 약간의 오버레이로 비슷하게 */
+body.glass-fallback .chat-container::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  mix-blend-mode: overlay;
+  border-radius: inherit;
 }
 
-#image-upload-input, #bg-upload-input {
-  display: none;
-}
+/* 접근성: 텍스트 대비 보정 */
+.message-text.light { color: #111; text-shadow: 0 1px 0 rgba(255,255,255,0.03); }
+.message-text.dark { color: #f3f3f3; text-shadow: 0 1px 0 rgba(0,0,0,0.35); }
 
-#image-upload-label, #bg-upload-label {
-  padding: 4px 8px;
-  border: 1px solid var(--input-border);
-  background-color: var(--input-bg);
-  border-radius: 4px;
-  cursor: pointer;
-  margin-right: 8px;
-  font-size: 1.2rem;
-}
-
-#send-button {
-  padding: 8px 14px;
-  border: none;
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
+/* 기타 */
+@media (max-width:520px){
+  .chat-container{height:90vh;border-radius:8px}
+  header{padding:10px 44px}
+  #theme-select{left:8px}
+  #reset-db-button{right:8px}
 }
 </style>
 </head>
-
 <body class="theme-light">
-  <div class="chat-container">
+  <div class="chat-container" id="chat-container">
     <header>
       <select id="theme-select">
         <option value="light">라이트</option>
@@ -226,11 +233,10 @@ header > span {
         <option value="20px">20</option>
       </select>
       <input type="color" id="color-picker" value="#000000" />
-      <input type="file" id="image-upload-input" accept="image/*" />
-      <label for="image-upload-input" id="image-upload-label">🖼️</label>
+      <input type="file" id="image-upload-input" accept="image/*" style="display:none" />
+      <label for="image-upload-input" id="image-upload-label" title="메시지 이미지 업로드">🖼️</label>
 
-      <!-- ✅ 배경 이미지 업로드 추가 -->
-      <input type="file" id="bg-upload-input" accept="image/*" />
+      <input type="file" id="bg-upload-input" accept="image/*" style="display:none" />
       <label for="bg-upload-input" id="bg-upload-label" title="배경 이미지 변경">🌆</label>
 
       <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required />
@@ -277,15 +283,16 @@ header > span {
     const imageUploadInput = document.getElementById("image-upload-input");
     const bgUploadInput = document.getElementById("bg-upload-input");
     const sendButton = document.getElementById("send-button");
+    const chatContainer = document.getElementById("chat-container");
 
-    // ✅ 테마 저장/복원
+    // --- 초기 로드: 테마/배경 복원 ---
     document.addEventListener("DOMContentLoaded", () => {
       const savedTheme = localStorage.getItem("chatTheme") || "light";
       document.body.className = `theme-${savedTheme}`;
       themeSelect.value = savedTheme;
 
       const savedBg = localStorage.getItem("chatBackground");
-      if (savedBg) document.body.style.backgroundImage = `url('${savedBg}')`;
+      if (savedBg) applyBackground(savedBg, false);
     });
 
     themeSelect.addEventListener("change", (e) => {
@@ -294,20 +301,84 @@ header > span {
       localStorage.setItem("chatTheme", theme);
     });
 
-    // ✅ 배경 이미지 업로드
+    // --- 배경 적용 함수 ---
+    function applyBackground(base64, runBrightnessCheck=true){
+      document.body.style.backgroundImage = `url('${base64}')`;
+      localStorage.setItem("chatBackground", base64);
+
+      // 플래그 추가
+      document.body.classList.add("glass-background");
+      chatContainer.classList.add("glass");
+
+      // backdrop-filter 지원 검사
+      const supportsBackdrop = (window.CSS && (CSS.supports && (CSS.supports("backdrop-filter", "blur(1px)") || CSS.supports("-webkit-backdrop-filter", "blur(1px)"))));
+
+      if (!supportsBackdrop) {
+        document.body.classList.add("glass-fallback");
+      } else {
+        document.body.classList.remove("glass-fallback");
+      }
+
+      // 밝기 추정 후 다크/라이트 보정
+      if (runBrightnessCheck) {
+        estimateImageBrightness(base64, (avg) => {
+          if (avg === null) return;
+          // 임계값 120 기준
+          if (avg < 120) {
+            document.body.classList.add("glass-dark");
+            // 메시지 텍스트 어둡게
+            document.querySelectorAll('.message-text').forEach(el=>{
+              el.classList.remove('light'); el.classList.add('dark');
+            });
+          } else {
+            document.body.classList.remove("glass-dark");
+            document.querySelectorAll('.message-text').forEach(el=>{
+              el.classList.remove('dark'); el.classList.add('light');
+            });
+          }
+        });
+      }
+    }
+
+    // 배경 업로드 이벤트
     bgUploadInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
+      if (file.size > 8 * 1024 * 1024) return alert("8MB 이하 이미지만 권장합니다.");
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target.result;
-        document.body.style.backgroundImage = `url('${base64}')`;
-        localStorage.setItem("chatBackground", base64);
+        applyBackground(base64, true);
       };
       reader.readAsDataURL(file);
     });
 
-    // ✅ 메시지 전송
+    // 이미지 메시지 업로드
+    imageUploadInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const username = usernameInput.value.trim();
+      if (!file || !username) return alert("이름을 입력하세요.");
+      if (file.size > 5 * 1024 * 1024) return alert("5MB 이하의 파일만 업로드 가능합니다.");
+
+      sendButton.disabled = true;
+      sendButton.textContent = "업로드 중...";
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        push(messagesRef, {
+          username,
+          imageBase64: base64,
+          timestamp: serverTimestamp()
+        });
+        imageUploadInput.value = "";
+        sendButton.disabled = false;
+        sendButton.textContent = "전송";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 메시지 전송
     document.getElementById("chat-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const username = usernameInput.value.trim();
@@ -329,33 +400,7 @@ header > span {
       messageInput.focus();
     });
 
-    // ✅ 이미지/GIF 업로드
-    imageUploadInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      const username = usernameInput.value.trim();
-      if (!file || !username) return alert("이름을 입력하세요.");
-      if (file.size > 5 * 1024 * 1024)
-        return alert("5MB 이하의 파일만 업로드 가능합니다.");
-
-      sendButton.disabled = true;
-      sendButton.textContent = "업로드 중...";
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target.result;
-        push(messagesRef, {
-          username,
-          imageBase64: base64,
-          timestamp: serverTimestamp()
-        });
-        imageUploadInput.value = "";
-        sendButton.disabled = false;
-        sendButton.textContent = "전송";
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // ✅ 실시간 메시지 표시
+    // 실시간 메시지 표시
     const messagesQuery = query(messagesRef, orderByChild("timestamp"));
     onChildAdded(messagesQuery, (snap) => {
       const data = snap.val();
@@ -371,8 +416,8 @@ header > span {
         const msg = document.createElement("p");
         msg.className = "message-text";
         msg.textContent = data.message;
-        msg.style.color = data.color;
-        msg.style.fontSize = data.size;
+        msg.style.color = data.color || getComputedStyle(document.documentElement).getPropertyValue('--message-text');
+        msg.style.fontSize = data.size || '14px';
         li.appendChild(msg);
       }
 
@@ -388,7 +433,7 @@ header > span {
       chatWindow.scrollTop = chatWindow.scrollHeight;
     });
 
-    // ✅ 초기화
+    // 초기화
     resetButton.addEventListener("click", () => {
       const pw = prompt("관리자 비밀번호(비밀번호0207)를 입력하세요:");
       if (pw === "비밀번호0207") {
@@ -397,6 +442,44 @@ header > span {
         alert("채팅이 초기화되었습니다.");
       } else if (pw) alert("비밀번호가 틀렸습니다.");
     });
+
+    // --- 유틸: 이미지 밝기 추정 (간단 샘플링) ---
+    function estimateImageBrightness(imgBase64, callback) {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = imgBase64;
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const w = canvas.width = Math.min(100, img.width);
+          const h = canvas.height = Math.min(100, img.height);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = ctx.getImageData(0,0,w,h).data;
+          let total = 0, count = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i+1], b = data[i+2];
+            const brightness = (0.299*r + 0.587*g + 0.114*b);
+            total += brightness; count++;
+          }
+          const avg = total / count;
+          callback(avg);
+        } catch (err) {
+          callback(null);
+        }
+      };
+      img.onerror = () => callback(null);
+    }
+
+    // --- 편의: 배경 제거 버튼 (콘솔에서 호출 가능) ---
+    window.clearChatBackground = function(){
+      localStorage.removeItem('chatBackground');
+      document.body.style.backgroundImage = '';
+      document.body.classList.remove('glass-background','glass-fallback','glass-dark');
+      chatContainer.classList.remove('glass');
+    };
+
+    // 접근성 보정이나 추가 설정은 여기서 더 확장 가능
   </script>
 </body>
 </html>
