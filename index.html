@@ -1,241 +1,188 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Firebase 실시간 채팅 앱 (v3)</title>
-<style>
-/* 기존 스타일 유지 */
-:root {
-  --bg-color: #f4f4f4;
-  --container-bg: #fff;
-  --header-bg: #007bff;
-  --header-text: #fff;
-  --window-bg: #fff;
-  --window-border: #ddd;
-  --message-bg: #e9ecef;
-  --message-user: #495057;
-  --message-text: #212529;
-  --form-bg: #f8f9fa;
-  --input-bg: #fff;
-  --input-border: #ccc;
-  --input-text: #212529;
-  --button-bg: #007bff;
-  --button-text: #fff;
-  --button-hover-bg: #0056b3;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase 실시간 글라스 채팅</title>
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #ececec;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: background 0.4s ease;
+    }
 
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: var(--bg-color);
-  color: var(--message-text);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-  transition: background-color 0.3s, background-image 0.3s;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
+    /* 🔹 테마 선택 버튼 */
+    .theme-selector {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
 
-.chat-container {
-  width: 100%;
-  max-width: 500px;
-  background-color: var(--container-bg);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px var(--shadow-color);
-  display: flex;
-  flex-direction: column;
-  height: 80vh;
-  max-height: 700px;
-  transition: background-color 0.3s, box-shadow 0.3s;
-}
+    .theme-selector button {
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(6px);
+      color: #333;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
 
-header {
-  background-color: var(--header-bg);
-  color: var(--header-text);
-  padding: 15px;
-  text-align: center;
-  font-size: 1.2rem;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+    .theme-selector button:hover {
+      background: rgba(255,255,255,0.6);
+    }
 
-header > span {
-  flex-grow: 1;
-}
+    /* 🔹 채팅박스 */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      transition: all 0.4s ease;
+    }
 
-#theme-select {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 4px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--input-border);
-  background-color: var(--input-bg);
-  color: var(--input-text);
-  font-size: 0.8rem;
-}
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-#reset-db-button {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      word-break: break-word;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
 
-.chat-window {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
-  border-bottom: 1px solid var(--window-border);
-  background-color: var(--window-bg);
-  transition: background-color 0.3s;
-}
+    .user {
+      align-self: flex-end;
+    }
 
-.message-item {
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: var(--message-bg);
-  border-radius: 8px;
-  max-width: 80%;
-}
+    .bot {
+      align-self: flex-start;
+    }
 
-.message-username {
-  display: block;
-  font-size: 0.8em;
-  font-weight: bold;
-  color: var(--message-user);
-  margin-bottom: 4px;
-}
+    /* 🔹 입력창 */
+    .input-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+    }
 
-.message-text {
-  font-size: 0.95em;
-  color: var(--message-text);
-}
+    .input-area input, .input-area select {
+      padding: 8px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.8);
+      outline: none;
+    }
 
-.message-image {
-  max-width: 100%;
-  border-radius: 5px;
-  margin-top: 5px;
-  cursor: pointer;
-}
+    .input-area button, .input-area label {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: 0.3s;
+    }
 
-#chat-form {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 15px;
-  background-color: var(--form-bg);
-  border-top: 1px solid var(--window-border);
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
+    .input-area button:hover, .input-area label:hover {
+      background: rgba(255,255,255,0.8);
+    }
 
-#username-input {
-  width: 90px;
-  padding: 8px;
-  margin-right: 8px;
-  border: 1px solid var(--input-border);
-  border-radius: 4px;
-  background-color: var(--input-bg);
-  color: var(--input-text);
-}
+    /* === 테마 === */
 
-#message-input {
-  flex-grow: 1;
-  padding: 8px;
-  border: 1px solid var(--input-border);
-  border-radius: 4px;
-  margin-right: 8px;
-}
+    /* 🌫 글라스모피즘 */
+    .glass {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(20px);
+    }
+    .glass .message.user {
+      background: rgba(0, 150, 255, 0.3);
+      color: #fff;
+    }
+    .glass .message.bot {
+      background: rgba(255, 255, 255, 0.3);
+      color: #000;
+    }
 
-#font-size-select, #color-picker {
-  margin-right: 8px;
-  padding: 6px;
-  border-radius: 4px;
-  border: 1px solid var(--input-border);
-  cursor: pointer;
-}
+    /* 🪞 외곽선 테마 */
+    .outline {
+      background: transparent;
+    }
+    .outline .message.user {
+      border: 1px solid rgba(0, 150, 255, 0.7);
+      color: #00aaff;
+      background: transparent;
+    }
+    .outline .message.bot {
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      color: #fff;
+      background: transparent;
+    }
 
-#image-upload-input, #bg-upload-input {
-  display: none;
-}
-
-#image-upload-label, #bg-upload-label {
-  padding: 4px 8px;
-  border: 1px solid var(--input-border);
-  background-color: var(--input-bg);
-  border-radius: 4px;
-  cursor: pointer;
-  margin-right: 8px;
-  font-size: 1.2rem;
-}
-
-#send-button {
-  padding: 8px 14px;
-  border: none;
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
-</style>
+    img.message-img {
+      max-width: 200px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+  </style>
 </head>
 
-<body class="theme-light">
-  <div class="chat-container">
-    <header>
-      <select id="theme-select">
-        <option value="light">라이트</option>
-        <option value="dark">다크</option>
-        <option value="pastel">파스텔</option>
-      </select>
-      <span>Firebase 실시간 채팅방</span>
-      <button id="reset-db-button">초기화</button>
-    </header>
+<body class="glass">
 
-    <div class="chat-window" id="chat-window">
-      <ul id="message-list"></ul>
-    </div>
+  <div class="theme-selector">
+    <button onclick="setTheme('glass')">🌫 글라스</button>
+    <button onclick="setTheme('outline')">🪞 외곽선</button>
+  </div>
 
-    <form id="chat-form">
-      <input type="text" id="username-input" placeholder="이름" required />
-      <select id="font-size-select">
+  <div class="chat-container glass">
+    <div class="chat-box" id="chatBox"></div>
+
+    <div class="input-area">
+      <input type="text" id="username" placeholder="이름" style="width:80px">
+      <select id="fontSize">
         <option value="12px">12</option>
         <option value="14px" selected>14</option>
         <option value="16px">16</option>
         <option value="18px">18</option>
         <option value="20px">20</option>
       </select>
-      <input type="color" id="color-picker" value="#000000" />
-      <input type="file" id="image-upload-input" accept="image/*" />
-      <label for="image-upload-input" id="image-upload-label">🖼️</label>
-
-      <!-- ✅ 배경 이미지 업로드 추가 -->
-      <input type="file" id="bg-upload-input" accept="image/*" />
-      <label for="bg-upload-input" id="bg-upload-label" title="배경 이미지 변경">🌆</label>
-
-      <input type="text" id="message-input" placeholder="메시지를 입력하세요..." required />
-      <button type="submit" id="send-button">전송</button>
-    </form>
+      <input type="color" id="colorPicker" value="#000000">
+      <input type="file" id="imgInput" accept="image/*" style="display:none;">
+      <label for="imgInput">🖼️</label>
+      <input type="file" id="bgInput" accept="image/*" style="display:none;">
+      <label for="bgInput" title="배경 변경">🌆</label>
+      <input type="text" id="msgInput" placeholder="메시지 입력..." style="flex:1;">
+      <button id="sendBtn">전송</button>
+    </div>
   </div>
 
   <script type="module">
@@ -248,9 +195,8 @@ header > span {
       push,
       onChildAdded,
       serverTimestamp,
-      query,
       orderByChild,
-      remove
+      query
     } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -266,136 +212,101 @@ header > span {
     const db = getDatabase(app);
     const messagesRef = ref(db, "messages");
 
-    const usernameInput = document.getElementById("username-input");
-    const messageInput = document.getElementById("message-input");
-    const colorPicker = document.getElementById("color-picker");
-    const fontSizeSelect = document.getElementById("font-size-select");
-    const messageList = document.getElementById("message-list");
-    const chatWindow = document.getElementById("chat-window");
-    const themeSelect = document.getElementById("theme-select");
-    const resetButton = document.getElementById("reset-db-button");
-    const imageUploadInput = document.getElementById("image-upload-input");
-    const bgUploadInput = document.getElementById("bg-upload-input");
-    const sendButton = document.getElementById("send-button");
+    const chatBox = document.getElementById("chatBox");
+    const username = document.getElementById("username");
+    const msgInput = document.getElementById("msgInput");
+    const colorPicker = document.getElementById("colorPicker");
+    const fontSize = document.getElementById("fontSize");
+    const imgInput = document.getElementById("imgInput");
+    const bgInput = document.getElementById("bgInput");
+    const sendBtn = document.getElementById("sendBtn");
 
-    // ✅ 테마 저장/복원
+    // ✅ 저장된 테마/배경 복원
     document.addEventListener("DOMContentLoaded", () => {
-      const savedTheme = localStorage.getItem("chatTheme") || "light";
-      document.body.className = `theme-${savedTheme}`;
-      themeSelect.value = savedTheme;
-
-      const savedBg = localStorage.getItem("chatBackground");
-      if (savedBg) document.body.style.backgroundImage = `url('${savedBg}')`;
+      const savedTheme = localStorage.getItem("chatTheme") || "glass";
+      document.body.className = savedTheme;
+      const bg = localStorage.getItem("chatBg");
+      if (bg) document.body.style.backgroundImage = `url('${bg}')`;
     });
 
-    themeSelect.addEventListener("change", (e) => {
-      const theme = e.target.value;
-      document.body.className = `theme-${theme}`;
+    // ✅ 테마 변경
+    function setTheme(theme) {
+      document.body.className = theme;
       localStorage.setItem("chatTheme", theme);
+    }
+    window.setTheme = setTheme;
+
+    // ✅ 메시지 전송
+    sendBtn.addEventListener("click", () => {
+      const text = msgInput.value.trim();
+      if (!username.value.trim() || !text) return alert("이름과 메시지를 입력하세요.");
+      push(messagesRef, {
+        username: username.value,
+        message: text,
+        color: colorPicker.value,
+        size: fontSize.value,
+        timestamp: serverTimestamp()
+      });
+      msgInput.value = "";
     });
 
-    // ✅ 배경 이미지 업로드
-    bgUploadInput.addEventListener("change", (e) => {
+    // ✅ 이미지 업로드
+    imgInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        push(messagesRef, {
+          username: username.value || "익명",
+          imageBase64: event.target.result,
+          timestamp: serverTimestamp()
+        });
+      };
+      reader.readAsDataURL(file);
+      imgInput.value = "";
+    });
+
+    // ✅ 배경 변경
+    bgInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target.result;
         document.body.style.backgroundImage = `url('${base64}')`;
-        localStorage.setItem("chatBackground", base64);
+        localStorage.setItem("chatBg", base64);
       };
       reader.readAsDataURL(file);
     });
 
-    // ✅ 메시지 전송
-    document.getElementById("chat-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const username = usernameInput.value.trim();
-      const message = messageInput.value.trim();
-      const color = colorPicker.value;
-      const size = fontSizeSelect.value;
+    // ✅ 실시간 수신
+    const q = query(messagesRef, orderByChild("timestamp"));
+    onChildAdded(q, (snap) => {
+      const d = snap.val();
+      const div = document.createElement("div");
+      div.className = "message bot";
+      const name = document.createElement("b");
+      name.textContent = d.username + ": ";
+      div.appendChild(name);
 
-      if (!username || !message) return alert("이름과 메시지를 입력하세요.");
-
-      push(messagesRef, {
-        username,
-        message,
-        color,
-        size,
-        timestamp: serverTimestamp()
-      });
-
-      messageInput.value = "";
-      messageInput.focus();
-    });
-
-    // ✅ 이미지/GIF 업로드
-    imageUploadInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      const username = usernameInput.value.trim();
-      if (!file || !username) return alert("이름을 입력하세요.");
-      if (file.size > 5 * 1024 * 1024)
-        return alert("5MB 이하의 파일만 업로드 가능합니다.");
-
-      sendButton.disabled = true;
-      sendButton.textContent = "업로드 중...";
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target.result;
-        push(messagesRef, {
-          username,
-          imageBase64: base64,
-          timestamp: serverTimestamp()
-        });
-        imageUploadInput.value = "";
-        sendButton.disabled = false;
-        sendButton.textContent = "전송";
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // ✅ 실시간 메시지 표시
-    const messagesQuery = query(messagesRef, orderByChild("timestamp"));
-    onChildAdded(messagesQuery, (snap) => {
-      const data = snap.val();
-      const li = document.createElement("li");
-      li.className = "message-item";
-
-      const name = document.createElement("span");
-      name.className = "message-username";
-      name.textContent = data.username || "익명";
-      li.appendChild(name);
-
-      if (data.message) {
-        const msg = document.createElement("p");
-        msg.className = "message-text";
-        msg.textContent = data.message;
-        msg.style.color = data.color;
-        msg.style.fontSize = data.size;
-        li.appendChild(msg);
+      if (d.message) {
+        const msg = document.createElement("span");
+        msg.textContent = d.message;
+        msg.style.color = d.color;
+        msg.style.fontSize = d.size;
+        div.appendChild(msg);
       }
 
-      if (data.imageBase64) {
+      if (d.imageBase64) {
         const img = document.createElement("img");
-        img.className = "message-image";
-        img.src = data.imageBase64;
-        img.addEventListener("click", () => window.open(data.imageBase64));
-        li.appendChild(img);
+        img.src = d.imageBase64;
+        img.className = "message-img";
+        img.addEventListener("click", () => window.open(d.imageBase64));
+        div.appendChild(img);
       }
 
-      messageList.appendChild(li);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    });
-
-    // ✅ 초기화
-    resetButton.addEventListener("click", () => {
-      const pw = prompt("관리자 비밀번호(비밀번호0207)를 입력하세요:");
-      if (pw === "비밀번호0207") {
-        remove(messagesRef);
-        messageList.innerHTML = "";
-        alert("채팅이 초기화되었습니다.");
-      } else if (pw) alert("비밀번호가 틀렸습니다.");
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
   </script>
 </body>
